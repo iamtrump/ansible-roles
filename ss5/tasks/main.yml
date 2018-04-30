@@ -1,0 +1,33 @@
+---
+- name: Copy package
+  copy:
+    src: "{{ role_path }}/files/ss5-package.deb"
+    dest: /root/
+
+- name: Install ss5
+  apt:
+    deb: /root/ss5-package.deb
+
+- name: Set port
+  lineinfile:
+    path: /etc/default/ss5
+    regexp: ^EXTRA_OPTS
+    line: "EXTRA_OPTS=-b 0.0.0.0:{{ ss5_port }}"
+  notify:
+    - ss5 restart
+
+- name: Copy ferm config
+  template:
+    src: "{{ role_path }}/files/etc/ferm/ferm.d/ferm.conf.j2"
+    dest: "/etc/ferm/ferm.d/{{ role_name }}.conf"
+    owner: root
+    group: root
+    mode: 0644
+  notify:
+    - ferm restart
+
+- name: Start and enable ss5
+  service:
+    name: ss5
+    state: started
+    enabled: yes

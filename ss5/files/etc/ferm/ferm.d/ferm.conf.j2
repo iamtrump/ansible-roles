@@ -1,0 +1,3 @@
+@def $PORT_SS5 = {{ ss5_port }};
+
+table filter chain INPUT interface $IF_UPLINK daddr $IP_SELF_UPLINK proto tcp dport $PORT_SS5 ACCEPT;

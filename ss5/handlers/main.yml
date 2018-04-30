@@ -1,0 +1,5 @@
+---
+- name: ss5 restart
+  service:
+    name: ss5
+    state: restarted
