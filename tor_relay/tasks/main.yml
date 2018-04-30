@@ -1,0 +1,42 @@
+---
+- name: Import Tor Project GPG key
+  apt_key:
+    keyserver: keys.gnupg.net
+    id: A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89
+
+- name: Add Tor Roject repository
+  apt_repository:
+    repo: "deb http://deb.torproject.org/torproject.org {{ ansible_distribution_release }} main"
+    filename: "{{ role_name }}"
+
+- name: Install Tor
+  apt:
+    name: tor
+    state: latest
+
+- name: Configure tor
+  lineinfile:
+    path: /etc/tor/torrc
+    regexp: "^{{ item.name }}"
+    line: "{{ item.name }} {{ item.value }}"
+    insertafter: "^#{{ item.name }}"
+  with_items:
+    - "{{ tor_relay_options }}"
+    - "{{ tor_relay_options_additional }}"
+  notify: tor_relay restart
+
+- name: Copy ferm config file
+  template:
+    src: "{{ role_path }}/files/etc/ferm/ferm.d/ferm.conf.j2"
+    dest: "/etc/ferm/ferm.d/{{ role_name }}.conf"
+    owner: root
+    group: root
+    mode: 0644
+  notify:
+    - ferm restart
+
+- name: Start and enable tor
+  service:
+    name: tor
+    state: started
+    enabled: yes

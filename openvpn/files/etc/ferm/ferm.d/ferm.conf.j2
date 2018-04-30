@@ -1,0 +1,9 @@
+@def $IF_OPENVPN = tun+;
+@def $NET_OPENVPN = {{ openvpn_network }};
+@def $PORT_OPENVPN = {{ openvpn_port }};
+@def $PROTO_OPENVPN = {{ openvpn_proto }};
+
+table filter chain INPUT interface $IF_UPLINK daddr $IP_SELF_UPLINK proto $PROTO_OPENVPN dport $PORT_OPENVPN ACCEPT;
+table filter chain INPUT interface $IF_OPENVPN proto icmp ACCEPT;
+table filter chain FORWARD interface $IF_OPENVPN saddr $NET_OPENVPN outerface $IF_UPLINK ACCEPT;
+table nat chain POSTROUTING saddr $NET_OPENVPN outerface $IF_UPLINK SNAT to $IP_SELF_UPLINK;

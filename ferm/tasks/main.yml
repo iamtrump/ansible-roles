@@ -1,0 +1,30 @@
+---
+- name: Install ferm
+  apt:
+    name: ferm
+    state: present
+
+- name: Create include directory for ferm rules
+  file:
+    path: /etc/ferm/ferm.d
+    state: directory
+    owner: root
+    group: root
+    mode: 0740
+
+- name: Copy ferm config
+  template:
+    src: "{{ role_path }}/files/etc/ferm/ferm.conf.j2"
+    dest: /etc/ferm/ferm.conf
+    owner: root
+    group: root
+    mode: 0644
+    validate: ferm -n %s
+  notify:
+    - ferm restart
+
+- name: Start and enable ferm
+  service:
+    name: ferm
+    state: started
+    enabled: yes

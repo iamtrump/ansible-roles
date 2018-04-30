@@ -1,0 +1,8 @@
+---
+sshd_options:
+  - { name: "UseDNS", value: "no" }
+  - { name: "PasswordAuthentication", value: "no" }
+  - { name: "PermitRootLogin", value: "no" }
+  - { name: "Port", value: "{{ sshd_port | default('22') }}" }
+
+sshd_options_additional: []

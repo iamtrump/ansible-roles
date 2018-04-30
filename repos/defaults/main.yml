@@ -1,0 +1,6 @@
+---
+repos:
+  - "deb http://mirror.yandex.ru/debian/ {{ ansible_distribution_release }} main contrib non-free"
+  - "deb http://mirror.yandex.ru/debian/ {{ ansible_distribution_release }}-updates main contrib non-free"
+
+repos_additional: []

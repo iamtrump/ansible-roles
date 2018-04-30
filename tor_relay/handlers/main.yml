@@ -1,0 +1,5 @@
+---
+- name: tor_relay restart
+  service:
+    name: tor
+    state: restarted

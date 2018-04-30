@@ -1,0 +1,8 @@
+---
+- name: Configure locale
+  locale_gen:
+    name: "{{ locale_name | default('en_US.UTF-8') }}"
+
+- name: Configure timezone
+  timezone:
+    name: "{{ locale_timezone | default('Europe/Moscow') }}"

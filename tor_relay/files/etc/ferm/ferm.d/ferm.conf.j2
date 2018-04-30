@@ -1,0 +1,3 @@
+@def $PORTS_TOR_RELAY = ({{ tor_or_port | default('3158') }} {{ tor_dir_port | default('3159') }});
+
+table filter chain INPUT interface $IF_UPLINK daddr $IP_SELF_UPLINK proto tcp dport $PORTS_TOR_RELAY ACCEPT;

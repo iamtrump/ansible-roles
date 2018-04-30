@@ -1,0 +1,30 @@
+;local a.b.c.d
+port {{ openvpn_port }}
+proto {{ openvpn_proto }}
+dev tun
+tun-mtu 1500
+ca {{ openvpn_ca_root }}/certs/ca.cert.pem
+cert {{ openvpn_ca_root }}/certs/server.cert.pem
+key {{ openvpn_ca_root }}/private/server.key.pem
+crl-verify {{ openvpn_ca_root }}/crl/ca.crl.pem
+dh {{ openvpn_root}}/dh.pem
+topology subnet
+server {{ openvpn_network | ipaddr('network') }} {{ openvpn_network | ipaddr('netmask') }}
+ifconfig-pool-persist ipp.txt
+push "redirect-gateway def1 bypass-dhcp"
+push "dhcp-option DNS 8.8.8.8"
+client-config-dir {{ openvpn_root }}/clients
+client-to-client
+keepalive 10 120
+tls-auth {{ openvpn_root }}/ta.key 0
+cipher AES-256-CBC
+compress lz4
+;max-clients 100
+user openvpn
+group openvpn
+persist-key
+persist-tun
+status /var/log/openvpn/openvpn-status.log
+explicit-exit-notify 1
+log /var/log/openvpn/openvpn.log
+verb 3

@@ -1,0 +1,11 @@
+---
+tor_relay_options:
+    - { name: ORPort, value: "{{ tor_relay_or_port | default('3158') }}" }
+    - { name: DirPort, value: "{{ tor_relay_dir_port | default('3159') }}" }
+    - { name: ExitPolicy, value: "reject *:*" }
+    - { name: Nickname, value: "{{ tor_relay_nickname | default(inventory_hostname) }}" }
+    - { name: ContactInfo, value: "{{ tor_relay_contact | default('') }}" }
+    - { name: RelayBandwidthRate, value: "{{ tor_relay_bandwidth | default('100 Kbytes') }}" }
+    - { name: RelayBandwidthBurst, value: "{{ tor_relay_bandwidth_burst | default('200 Kbytes') }}" }
+
+tor_relay_options_additional: []

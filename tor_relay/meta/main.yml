@@ -1,0 +1,5 @@
+galaxy_info:
+  author: Mikhail Mironov
+  description: Configure tor relay node
+
+dependencies: [ferm]

@@ -1,0 +1,46 @@
+@def $IF_LO = lo;
+@def $IF_SELF_LO = 127.0.0.1;
+
+@def $IF_UPLINK = {{ ansible_default_ipv4.interface }}; 
+@def $IP_SELF_UPLINK = {{ ansible_default_ipv4.address }}; 
+
+@def $PORT_SSH = {{ sshd_port | default('22') }};
+
+table filter {
+  chain INPUT {
+    policy DROP;
+
+    # connection tracking
+    mod state state INVALID DROP;
+    mod state state (ESTABLISHED RELATED) ACCEPT;
+
+    # allow local packet
+    interface $IF_LO ACCEPT;
+
+    interface $IF_UPLINK daddr $IP_SELF_UPLINK {
+      # respond to ping
+      proto icmp icmp-type (echo-request echo-reply destination-unreachable time-exceeded) ACCEPT;
+
+      # allow SSH connections
+      proto tcp dport $PORT_SSH ACCEPT;
+  }
+}
+
+  chain OUTPUT {
+    policy ACCEPT;
+
+    # connection tracking
+    mod state state INVALID DROP;
+    mod state state (ESTABLISHED RELATED) ACCEPT;
+  }
+
+  chain FORWARD {
+    policy DROP;
+
+    # connection tracking
+    mod state state INVALID DROP;
+    mod state state (ESTABLISHED RELATED) ACCEPT;
+  }
+}
+
+@include /etc/ferm/ferm.d/;

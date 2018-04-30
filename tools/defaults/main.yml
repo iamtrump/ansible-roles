@@ -1,0 +1,32 @@
+---
+tools:
+  - aptitude
+  - bash-completion
+  - bc
+  - colordiff
+  - curl
+  - dnsutils
+  - file
+  - gcc
+  - git
+  - htop
+  - iotop
+  - iptraf
+  - lsof
+  - make
+  - man
+  - mc
+  - mlocate
+  - nmon
+  - rsync
+  - screen
+  - strace
+  - sudo
+  - tcpdump
+  - telnet
+  - traceroute
+  - unzip
+  - vim
+  - wget
+
+tools_additional: []

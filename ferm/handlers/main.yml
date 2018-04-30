@@ -1,0 +1,5 @@
+---
+- name: ferm restart
+  service:
+    name: ferm
+    state: restarted

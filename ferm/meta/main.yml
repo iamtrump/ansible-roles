@@ -1,0 +1,5 @@
+galaxy_info:
+  author: Mikhail Mironov
+  description: Configure firewall with ferm
+
+dependencies: []

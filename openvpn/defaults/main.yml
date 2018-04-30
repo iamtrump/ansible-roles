@@ -1,0 +1,24 @@
+---
+openvpn_server_name: openvpn server
+openvpn_clients:
+  - {name: client, cn: client, ip: 192.168.88.5}
+openvpn_revoke: []
+
+openvpn_address: "{{ ansible_default_ipv4.address }}"
+openvpn_port: 161
+openvpn_proto: udp
+openvpn_network: 192.168.88.0/24
+
+openvpn_root: /etc/openvpn
+openvpn_ca_root: /etc/openvpn/pki
+
+openvpn_ca_name: CA
+openvpn_ca_days: 3655
+openvpn_c_days: 370
+openvpn_c_country: RU
+openvpn_c_province: Moscow
+openvpn_c_city: Moscow
+openvpn_c_organization: Corp
+openvpn_c_ou: CU
+
+openvpn_local_config_dir: "{{ inventory_hostname }}-openvpn-profiles

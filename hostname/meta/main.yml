@@ -1,0 +1,5 @@
+galaxy_info:
+  author: Mikhail Mironov
+  description: Configure hostname and /etc/hosts
+
+dependencies: []

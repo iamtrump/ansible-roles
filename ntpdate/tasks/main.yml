@@ -1,0 +1,21 @@
+---
+- name: Install ntpdate
+  apt:
+    name: ntpdate
+    state: present
+
+- name: Add cronjob for timesync
+  cron:
+    name: Sync time
+    minute: "*/11"
+    job: "ntpdate -s4 {{ ntpdate_timeserver | default('pool.ntp.org') }}"
+    user: root
+    cron_file: "{{ role_name }}"
+
+- name: Add cronjob for timesync after reboot
+  cron:
+    name: Sync time after reboot
+    special_time: reboot
+    job: "ntpdate -s4 {{ ntpdate_timeserver | default('pool.ntp.org') }}"
+    user: root
+    cron_file: "{{ role_name }}"

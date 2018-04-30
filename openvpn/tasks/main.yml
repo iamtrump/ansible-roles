@@ -1,0 +1,282 @@
+- name: Add OpenVPN repo key
+  apt_key:
+    id: 8E6DA8B4E158C569
+    keyserver: hkps.pool.sks-keyservers.net
+
+- name: Add OpenVPN repo
+  apt_repository:
+    repo: "deb http://build.openvpn.net/debian/openvpn/stable {{ ansible_distribution_release }} main"
+    filename: "{{ role_name }}"
+
+- name: Install OpenVPN
+  apt:
+    name: openvpn
+    state: present
+
+- name: Create openvpn user
+  user:
+    name: openvpn
+    system: yes
+    shell: /usr/sbin/nologin
+    createhome: no
+
+- name: Set openvpn root permissions
+  file:
+    path: "{{ openvpn_root }}"
+    owner: root
+    group: openvpn
+    mode: 0750
+
+- name: Ensure PKI dirs created
+  file:
+    path: "{{ openvpn_ca_root }}/{{ item.name }}"
+    state: directory
+    mode: "{{ item.mode }}"
+  with_items:
+    - {name: "", mode: 755}
+    - {name: certs, mode: 755}
+    - {name: crl, mode: 755}
+    - {name: csr, mode: 755}
+    - {name: newcerts, mode: 755}
+    - {name: private, mode: 700}
+
+- name: Ensure certificate database exists
+  file:
+    path: "{{ openvpn_ca_root }}/index.txt"
+    state: touch
+
+- name: Ensures serial seeded
+  shell: "openssl rand -hex 16 > serial"
+  args:
+    chdir: "{{ openvpn_ca_root }}"
+    creates: serial
+
+- name: Ensures crlnumber seeded
+  shell: "echo 1000 > crlnumber"
+  args:
+    chdir: "{{ openvpn_ca_root }}"
+    creates: crlnumber
+
+- name: Copy openssl config file
+  template:
+    src: "{{ role_path }}/files/etc/openvpn/pki/openssl.cnf.j2"
+    dest: "{{ openvpn_ca_root }}/openssl.cnf"
+
+- name: Revoke obsolete certificates
+  when: openvpn_revoke|length > 0
+  command: "openssl ca -config openssl.cnf -revoke certs/{{ item }}.cert.pem"
+  args:
+    chdir: "{{ openvpn_ca_root }}"
+  with_items:
+    - "{{ openvpn_revoke }}"
+  ignore_errors: true
+  tags: openvpn_revoke
+
+- name: Remove revoked certificates
+  when: openvpn_revoke|length > 0
+  file:
+    path: "{{ openvpn_ca_root }}/certs/{{ item }}.cert.pem"
+    state: absent
+  with_items:
+    - "{{ openvpn_revoke }}"
+  tags: openvpn_revoke
+
+- name: Remove revoked reqs
+  when: openvpn_revoke|length > 0
+  file:
+    path: "{{ openvpn_ca_root }}/csr/{{ item }}.csr.pem"
+    state: absent
+  with_items:
+    - "{{ openvpn_revoke }}"
+  tags: openvpn_revoke
+
+- name: Remove revoked keys
+  when: openvpn_revoke|length > 0
+  file:
+    path: "{{ openvpn_ca_root }}/private/{{ item }}.key.pem"
+    state: absent
+  with_items:
+    - "{{ openvpn_revoke }}"
+  tags: openvpn_revoke
+
+- name: Remove revoked configs
+  when: openvpn_revoke|length > 0
+  file:
+    path: "{{ openvpn_root }}/client/{{ item }}.ovpn"
+    state: absent
+  with_items:
+    - "{{ openvpn_revoke }}"
+  tags: openvpn_revoke
+
+- name: Remove static user profiles
+  when: openvpn_revoke|length > 0
+  file:
+    path: "{{ openvpn_root }}/client/{{ item }}"
+    state: absent
+  with_items:
+    - "{{ openvpn_revoke }}"
+  tags: openvpn_revoke
+
+- name: Generate CA key
+  command: "openssl genrsa -out private/ca.key.pem 4096"
+  args:
+    chdir: "{{ openvpn_ca_root }}"
+    creates: private/ca.key.pem
+
+- name: Create CA certificate
+  command: "openssl req -config openssl.cnf -key private/ca.key.pem -new -x509 -days {{ openvpn_ca_days }} -sha256 -extensions v3_ca -out certs/ca.cert.pem -subj '/C={{ openvpn_c_country }}/ST={{ openvpn_c_province }}/L={{ openvpn_c_city }}/O={{ openvpn_c_organization }}/OU={{ openvpn_c_ou }}/CN={{ openvpn_ca_name }}'"
+  args:
+    chdir: "{{ openvpn_ca_root }}"
+    creates: certs/ca.cert.pem
+
+- name: Generate server and client keys
+  command: "openssl genrsa -out private/{{ item.name }}.key.pem 2048"
+  args:
+    chdir: "{{ openvpn_ca_root }}"
+    creates: "private/{{ item.name }}.key.pem"
+  with_items:
+    - {name: server}
+    - "{{ openvpn_clients }}"
+
+- name: Set proper permissions to keys
+  file:
+    path: "{{ openvpn_ca_root }}/private/{{ item.name }}.key.pem"
+    state: file
+    mode: 0400
+  with_items:
+    - {name: ca}
+    - {name: server}
+    - "{{ openvpn_clients }}"
+
+- name: Create sign requests for server and clients certificates
+  command: "openssl req -config openssl.cnf -key private/{{ item.name }}.key.pem -new -sha256 -out csr/{{ item.name }}.csr.pem -subj '/C={{ openvpn_c_country }}/ST={{ openvpn_c_province }}/L={{ openvpn_c_city }}/O={{ openvpn_c_organization }}/OU={{ openvpn_c_ou }}/CN={{ item.cn | default(item.name) }}'"
+  args:
+    chdir: "{{ openvpn_ca_root }}"
+    creates: "csr/{{ item.name }}.csr.pem"
+  with_items:
+    - {name: server, cn: "{{ openvpn_server_name }}"}
+    - "{{ openvpn_clients }}"
+
+- name: Sign server certificate
+  command: "openssl ca -batch -config openssl.cnf -extensions server_cert -days {{ openvpn_c_days }} -notext -md sha256 -in csr/server.csr.pem -out certs/server.cert.pem"
+  args:
+    chdir: "{{ openvpn_ca_root }}"
+    creates: certs/server.cert.pem
+
+- name: Sign clients certificates
+  command: "openssl ca -batch -config openssl.cnf -extensions user_cert -days {{ openvpn_c_days }} -notext -md sha256 -in csr/{{ item.name }}.csr.pem -out certs/{{ item.name }}.cert.pem"
+  args:
+    chdir: "{{ openvpn_ca_root }}"
+    creates: "certs/{{ item.name }}.cert.pem"
+  with_items:
+    - "{{ openvpn_clients }}"
+
+- name: Generate CRL
+  command: "openssl ca -config openssl.cnf -gencrl -out crl/ca.crl.pem"
+  args:
+    chdir: "{{ openvpn_ca_root }}"
+  tags: openvpn_revoke
+
+- name: Generate dhparam
+  command: "openssl dhparam -out dh.pem 2048"
+  args:
+    chdir: "{{ openvpn_root }}"
+    creates: "dh.pem"
+
+- name: Generate HMAC key
+  command: "openvpn --genkey --secret ta.key"
+  args:
+    chdir: "{{ openvpn_root }}"
+    creates: "ta.key"
+
+- name: Copy openvpn server config file
+  template:
+    src: "{{ role_path }}/files/etc/openvpn/openvpn_server.conf.j2"
+    dest: "{{ openvpn_root }}/server.conf"
+  notify:
+    - openvpn restart
+
+- name: Ensure openvpn log directory exists
+  file:
+    path: /var/log/openvpn
+    state: directory
+
+- name: Enable IP forwarding
+  sysctl:
+    name: net.ipv4.ip_forward
+    value: 1
+    reload: yes
+
+- name: Copy ferm config file
+  template:
+    src: "{{ role_path }}/files/etc/ferm/ferm.d/ferm.conf.j2"
+    dest: "/etc/ferm/ferm.d/{{ role_name }}.conf"
+  notify:
+    - ferm restart
+
+- name: Start and enable openvpn
+  service:
+    name: openvpn
+    state: started
+    enabled: yes
+
+- name: Register CA certificate contents
+  command: "cat {{ openvpn_ca_root }}/certs/ca.cert.pem"
+  register: openvpn_ca_contents
+  changed_when: false
+
+- name: Register client certificate contents
+  command: "cat {{ openvpn_ca_root }}/certs/{{ item.name }}.cert.pem"
+  with_items:
+    - "{{ openvpn_clients }}"
+  register: openvpn_client_certificates
+  changed_when: false
+
+- name: Register client key contents
+  command: "cat {{ openvpn_ca_root }}/private/{{ item.name }}.key.pem"
+  with_items:
+    - "{{ openvpn_clients }}"
+  register: openvpn_client_keys
+  changed_when: false
+
+- name: Register HMAC key contents
+  command: "cat {{ openvpn_root }}/ta.key"
+  register: openvpn_hmac_key_contents
+  changed_when: false
+
+- name: Create client configuration profiles
+  template:
+    src: "{{ role_path }}/files/etc/openvpn/client/openvpn_client.conf.j2"
+    dest: "{{ openvpn_root }}/client/{{ item[0].name }}.ovpn"
+  with_together:
+    - "{{ openvpn_clients }}"
+    - "{{ openvpn_client_certificates.results }}"
+    - "{{ openvpn_client_keys.results }}"
+  loop_control:
+    label: "{{ item[0] }}"
+
+- name: Create static user profile
+  lineinfile:
+    path: "{{ openvpn_root }}/client/{{ item.name }}"
+    regexp: ifconfig-push
+    line: "ifconfig-push {{ item.ip }} {{ openvpn_network | ipaddr('netmask') }}"
+    create: yes
+    mode: 0644
+  with_items: "{{ openvpn_clients }}"
+  when: item.ip is defined
+
+- name: Copy client configuration profiles to the current local directory
+  fetch:
+    src: "{{ openvpn_root }}/client/{{ item.name }}.ovpn"
+    dest: "{{ openvpn_local_config_dir }}/{{ item.name }}.ovpn"
+    flat: yes
+  with_items:
+    - "{{ openvpn_clients }}"
+
+- name: Add cronjob to regenerate crl every 10 days
+  cron:
+    cron_file: "{{ role_name }}"
+    name: Regenerate crl for openvpn
+    user: root
+    job: "openssl ca -config {{ openvpn_ca_root }}/openssl.cnf -gencrl -out {{ openvpn_ca_root }}/crl/ca.crl.pem"
+    day: "*/10"

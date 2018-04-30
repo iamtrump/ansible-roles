@@ -1,0 +1,14 @@
+---
+- name: Set hostname
+  hostname:
+    name: "{{ hostname | default(inventory_hostname) }}"
+
+- name: Configure /etc/hosts
+  lineinfile:
+    path: /etc/hosts
+    regexp: "^{{ item }}"
+    line: "{{ item }} localhost {{ hostname | default(ansible_hostname) }}"
+    create: yes
+  with_items:
+    - 127.0.0.1
+    - ::1

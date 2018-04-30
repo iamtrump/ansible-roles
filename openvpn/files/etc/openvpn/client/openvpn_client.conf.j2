@@ -1,0 +1,27 @@
+client
+dev tun
+tun-mtu 1500
+proto {{ openvpn_proto }}
+remote {{ openvpn_address }} {{ openvpn_port }}
+resolv-retry infinite
+nobind
+persist-key
+persist-tun
+auth-nocache
+<ca>
+{{ openvpn_ca_contents.stdout }}
+</ca>
+<cert>
+{{ item[1].stdout }}
+</cert>
+<key>
+{{ item[2].stdout }}
+</key>
+remote-cert-tls server
+key-direction 1
+<tls-auth>
+{{ openvpn_hmac_key_contents.stdout }}
+</tls-auth>
+cipher AES-256-CBC
+compress lz4
+verb 3
