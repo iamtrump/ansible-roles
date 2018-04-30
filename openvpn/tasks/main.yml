@@ -211,6 +211,9 @@
   template:
     src: "{{ role_path }}/files/etc/ferm/ferm.d/ferm.conf.j2"
     dest: "/etc/ferm/ferm.d/{{ role_name }}.conf"
+    owner: root
+    group: root
+    mode: 0644
   notify:
     - ferm restart
 
