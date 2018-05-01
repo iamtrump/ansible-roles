@@ -13,7 +13,7 @@ server {{ openvpn_network | ipaddr('network') }} {{ openvpn_network | ipaddr('ne
 ifconfig-pool-persist ipp.txt
 push "redirect-gateway def1 bypass-dhcp"
 push "dhcp-option DNS 8.8.8.8"
-client-config-dir {{ openvpn_root }}/clients
+client-config-dir {{ openvpn_root }}/client
 client-to-client
 keepalive 10 120
 tls-auth {{ openvpn_root }}/ta.key 0
