@@ -4,5 +4,6 @@ sshd_options:
   - { name: "PasswordAuthentication", value: "no" }
   - { name: "PermitRootLogin", value: "no" }
   - { name: "Port", value: "{{ sshd_port | default('22') }}" }
+  - { name: "ClientAliveInterval", value: "120" }
 
 sshd_options_additional: []
