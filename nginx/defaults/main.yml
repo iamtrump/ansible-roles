@@ -1,0 +1,5 @@
+---
+nginx_www_root: /srv/www
+nginx_tls_dir: "{{ nginx_www_root }}/tls"
+nginx_well_known_dir: "{{ nginx_www_root }}/well-known"
+nginx_acme_dir: "{{ nginx_www_root }}/acme.sh"

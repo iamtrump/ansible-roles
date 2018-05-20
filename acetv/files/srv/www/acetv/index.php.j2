@@ -1,0 +1,238 @@
+<?php
+  $password = '{{ acetv_password }}';
+  $salt = 'random';
+  $md5 = md5($password.$salt);
+  @$action=$_GET['action'];
+  //set_time_limit (60);
+  error_reporting('ALL');
+
+  function renew_channels(){
+    $channels = file_get_contents('{{ acetv_channels_list }}');
+    if (0 === strpos(bin2hex($channels), 'efbbbf')) $channels = substr($channels, 3);
+    $channels = json_decode($channels, true);
+    $channels = $channels['channels'];
+    $data = serialize($channels);
+    $fd = fopen('{{ acetv_frontend_dir }}/channels.list', 'w');
+    fwrite($fd, $data);
+    fclose($fd);
+    return $channels;
+  }
+  function get_channels(){
+    $data = file_get_contents('{{ acetv_frontend_dir }}/channels.list');
+    $channels = unserialize($data);
+    return $channels;
+  }
+  function get_channel_info($id){
+    $channels = get_channels();
+    foreach ($channels as $c) {
+      if ($c['url'] == $id){
+        $info=$c;
+        break;
+      }
+    }
+    return $info;
+  }
+  function add_hd_icon($name){
+    $name = preg_replace('/HD$/', '<span class="glyphicon glyphicon-hd-video" aria-hidden="true"></span>', $name);
+    return $name;
+  }
+  function get_favorites(){
+    $channels=get_channels();
+    foreach ($channels as $c) {
+      if (in_array($c['name'], unserialize($_COOKIE['favorites']))) $favorites[]=$c;
+    }
+    return $favorites;
+  }
+  function print_channels($channels, $current_id){
+    foreach ($channels as $c) {
+      if ($c['url'] == $current_id){
+        echo '<a href="?action=&channel='.$c['url'].'" class="list-group-item active">'.add_hd_icon($c['name']).' ('.$c['cat'].')</a>';
+      }
+      else {
+        echo '<a href="?action=&channel='.$c['url'].'" class="list-group-item">'.add_hd_icon($c['name']).' ('.$c['cat'].')</a>';
+      }
+    }
+  }
+
+?>
+<head>
+  <title>TDZ&trade; AceTV</title>
+  <link rel="icon" type="image/png" href="/favicon.jpg" />
+  <!-- Latest compiled and minified CSS -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+  <!-- JQuery -->
+  <script src="https://code.jquery.com/jquery.min.js"></script>
+  <!-- Latest compiled and minified JavaScript -->
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+  <!-- -->
+  <script src="https://cdn.rawgit.com/zenorocha/clipboard.js/v1.6.1/dist/clipboard.min.js"></script>
+</head>
+<body>
+  <div class="container-fluid">
+
+<?php
+  @$my_sid=$_COOKIE["my_sid"];
+  if ($my_sid != $md5 and $action != 'login'){
+?>
+    <div class="page-header">
+      <h1><span class="glyphicon glyphicon-picture"></span> TDZ&trade; AceTV</h1>
+    </div>
+    <form action="?action=login" method="post">
+      <div class="input-group input-group-lg" style="width:300px">
+        <span class="input-group-addon" id="basic-addon1">TV</span>
+        <input type="text" class="form-control" name="user" aria-describedby="sizing-addon2">
+      </div>
+    </form>
+<?php
+  }
+  else {
+    // renew playlist:
+    $last_renew=filemtime('/srv/www/tv/channels.list');
+    if (time()-$last_renew > 3600){ // 1 hour
+      $channels=renew_channels();
+    }
+
+    $favorites = array('Nat Geo Wild HD', 'Матч! Арена HD','Матч! Арена', 'Матч ТВ HD', 'Матч ТВ', '2x2', '24 Док', 'National Geographic HD', 'Discovery Channel HD', 'ID Xtra', 'Extreme Sports', 'Sky Sports F1');
+    setcookie('favorites', serialize($favorites),time()+9999999999);
+    
+    switch ($action){
+    case 'login':
+      @$user=$_POST['user'];
+      if ($user == $password) setcookie('my_sid',$md5,time()+9999999999);
+?>
+    <script>
+      window.location = '/'
+    </script>
+<?php
+      break;
+    case 'logout':
+      setcookie('my_sid','',time()+9999999999);
+?>
+    <script>
+      window.location = '/'
+    </script>
+<?php
+      break;
+    case 'update':
+      $channels = renew_channels();
+?>
+    <script>
+      window.location = '/'
+    </script>
+<?php
+      break;
+    default:
+      if (!isset($channels)){
+        $data = file_get_contents('/srv/www/tv/channels.list');
+        $channels = unserialize($data);
+      }
+
+      @$channel=str_replace('acestream://', '', $_POST['channel']);
+      if ($channel == '') $channel=$_GET['channel'];
+      if ($channel == ''){
+        //read cookie
+        $channel=$_COOKIE["channel"];
+        if ($channel == ''){
+          // channel not selected, start first channel
+          $channel = $channels[0]['url'];
+        }
+      }
+      else {
+        if (!preg_match('/^[a-f0-9]{40}$/', $channel)) $channel=$channels[0]['url'];;
+        //set cookie
+        setcookie('channel',$channel,time()+9999999999);
+      }
+      $info = get_channel_info($channel);
+
+      $lang=$_GET['lang'];
+      if (!isset($lang)){
+        //read cookie
+        $lang=$_COOKIE["lang"];
+        if ($lang == ''){
+          // language not selected, start russian
+          $lang = 'rus';
+        }
+      }
+      else {
+        //set cookie
+        setcookie('channel',$channel,time()+9999999999);
+      }
+?>
+      <div class="page-header">
+        <h1><?=(isset($info['name'])) ? add_hd_icon($info['name']) : $channel;?></h1>
+      </div>
+      <div class="row">
+        <div class="col-md-8">
+          <video width="100%" autoplay controls>
+            <source src="http://tv.mikhailmironov.ru/ace/manifest.m3u8?id=<?=$channel;?>&transcode_audio=1&preferred_audio_language=<?=$lang;?>" type="application/x-mpegURL">
+            Your browser does not support the video element.
+          </video>
+          <p>
+        </div>
+        <div class="col-md-1"></div>
+        <div class="col-md-3">
+          <form action="/?action=" method="post">
+          <div class="input-group">
+            <span class="input-group-addon" id="basic-addon3">acestream://</span>
+            <input name="channel" type="text" class="form-control" id="basic-url" aria-describedby="basic-addon3">
+          </div>
+          </form>
+          <p>
+          <div>
+            <!-- Nav tabs -->
+            <ul class="nav nav-tabs" role="tablist">
+              <li role="presentation" class="active"><a href="#fav" aria-controls="fav" role="tab" data-toggle="tab"><span class="glyphicon glyphicon-heart" aria-hidden="true"></span></a></li>
+              <li role="presentation"><a href="#all" aria-controls="all" role="tab" data-toggle="tab"><span class="glyphicon glyphicon-list" aria-hidden="true"></span></a></li>
+            </ul>
+
+            <!-- Tab panes -->
+            <div class="tab-content">
+              <div role="tabpanel" class="tab-pane active" id="fav">
+                <div class="listgroup pre-scrollable" style="max-height: 460px">
+                  <?php
+                    $favorites=get_favorites();
+                    print_channels($favorites, $channel);
+                  ?>
+                </div>
+              </div>
+              <div role="tabpanel" class="tab-pane" id="all">
+                <div class="listgroup pre-scrollable" style="max-height: 460px">
+                  <?php
+                    $channels=get_channels();
+                    print_channels($channels, $channel);
+                  ?>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+<?php
+    }
+?>
+      <p>
+      <div class="row">
+        <div class="btn-group col-md-8" role="group">
+          <div class="btn-group dropup" role="group">
+            <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              <span class="glyphicon glyphicon-headphones" aria-hidden="true"></span> Preffered Language
+              <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu">
+              <li <?=($lang=='eng') ? 'class="active"' : '';?>><a href="?action=&channel=<?=$channel;?>&lang=eng"><span class="glyphicon glyphicon-volume-up" aria-hidden="true"></span> English</a></li>
+              <li <?=($lang=='rus') ? 'class="active"' : ''; ?>><a href="?action=&channel=<?=$channel;?>&lang=rus""><span class="glyphicon glyphicon-volume-up" aria-hidden="true"></span> Russian</a></li>
+            </ul>
+          </div>
+          <!-- <button class="btn btn-default" onclick="location.href='?action=update'"><span class="glyphicon glyphicon-refresh"></span> Update Channels</button> -->
+         <script>new Clipboard('.clipboard');</script>
+         <button class="btn btn-default clipboard" data-clipboard-text="http://tv.mikhailmironov.ru/ace/manifest.m3u8?id=<?=$channel;?>&transcode_audio=1&preferred_audio_language=<?=$lang;?>"><span class="glyphicon glyphicon-copy"></span> Copy Stream Link</button>
+         <button class="btn btn-default" onclick="location.href='?action=logout'"><span class="glyphicon glyphicon-log-out"></span> Logout</button>
+        </div>
+      </div>
+      <p>
+<?php
+  }
+?>
+
+  </div>
+</body>

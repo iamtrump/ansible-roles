@@ -1,0 +1,94 @@
+---
+- name: Add nginx repo key
+  apt_key:
+    url: http://nginx.org/keys/nginx_signing.key
+
+- name: Add nginx repo
+  apt_repository:
+    repo: "deb http://nginx.org/packages/debian/ {{ ansible_distribution_release }} nginx"
+    filename: "{{ role_name }}"
+
+- name: Install nginx
+  apt:
+    name: nginx
+    state: present
+
+- name: Set nginx user to www-data
+  lineinfile:
+    path: /etc/nginx/nginx.conf
+    regexp: ^user
+    line: user  www-data;
+  notify:
+    - nginx restart
+
+- name: Change www-data home folder
+  user:
+    name: www-data
+    home: "{{ nginx_www_root }}"
+    createhome: yes
+
+- name: Create well-known and tls dirs
+  file:
+    path: "{{ item.name }}"
+    state: directory
+    owner: www-data
+    group: www-data
+    mode: "{{ item.mode }}"
+  with_items:
+    - { name: "{{ nginx_well_known_dir }}/.well-known", mode: "0755" }
+    - { name: "{{ nginx_tls_dir }}", mode: "0750" }
+
+- name: Remove default virtualhost
+  file:
+    dest: /etc/nginx/conf.d/default.conf
+    state: absent
+  notify:
+    - nginx restart
+
+- name: Copy well-known virtualhost
+  template:
+    src: "{{ role_path }}/files/etc/nginx/conf.d/nginx.conf.j2"
+    dest: "/etc/nginx/conf.d/{{ role_name }}.conf"
+    owner: root
+    group: root
+    mode: 0644
+  notify: nginx restart
+
+- name: Install php-fpm
+  apt:
+    name: php-fpm
+    state: present
+
+- name: Copy ferm config
+  copy:
+    src: "{{ role_path }}/files/etc/ferm/ferm.d/ferm.conf"
+    dest: "/etc/ferm/ferm.d/{{ role_name }}.conf"
+    owner: root
+    group: root
+    mode: 0644
+  notify:
+    - ferm restart
+
+- name: Clone acme.sh repo
+  git:
+    repo: https://github.com/Neilpang/acme.sh.git
+    dest: "{{ nginx_acme_dir }}"
+    force: yes
+
+- name: Add cronjob to renew issued TLS certificates
+  cron:
+    name: Renew TLS certificates
+    job: "{{ nginx_acme_dir }}/acme.sh --cron --cert-home {{ nginx_tls_dir }}"
+    user: www-data
+    minute: 0
+    hour: 1
+    cron_file: "{{ role_name }}"
+
+- name: Start and enable services
+  service:
+    name: "{{ item }}"
+    state: started
+    enabled: yes
+  with_items:
+    - nginx
+    - php7.0-fpm

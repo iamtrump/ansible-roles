@@ -1,0 +1,81 @@
+---
+- name: Create acetv user
+  user:
+    name: "{{ acetv_user }}"
+    group: "{{ acetv_group }}"
+    shell: /bin/false
+    comment: Acestream Engine user
+
+- name: Install dependencies
+  apt:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - libpython2.7
+    - python-setuptools
+    - python-m2crypto
+    - python-apsw
+    - libxslt1.1
+    - libssl1.0.0
+
+- name: Install AceStream
+  unarchive:
+    src: "{{ acetv_engine_downlod_link }}"
+    dest: "{{ acetv_prefix }}/"
+    remote_src: true
+    owner: "{{ acetv_user }}"
+    group: "{{ acetv_group }}"
+
+- name: Copy Acestream Engine systemd unit
+  template:
+    src: "{{ role_path }}/files/lib/systemd/system/acestreamengine.service.j2"
+    dest: /lib/systemd/system/acestreamengine.service
+    owner: root
+    group: root
+    mode: 0755
+
+- name: Start and enable Acestream Engine
+  service:
+    name: acestreamengine
+    state: started
+    enabled: yes
+
+- name: Add cronjob to clean Acestream Engine cache
+  cron:
+    name: Clean Acestream Engine cache
+    job: "find {{ acetv_cache_dir }} -type f -mmin +10 -delete"
+    user: "{{ acetv_user }}"
+    minute: "*/2"
+    cron_file: "{{ role_name }}"
+
+- name: Copy virtualhost config file
+  template:
+    src: "{{ role_path }}/files/etc/nginx/conf.d/acetv.conf.j2"
+    dest: "/etc/nginx/conf.d/{{ role_name }}.conf"
+    owner: root
+    group: root
+    mode: 0644
+  notify: nginx restart
+
+- name: Create virtual host root directory
+  file:
+    dest: "{{ acetv_frontend_dir }}"
+    state: directory
+    owner: www-data
+    group: www-data
+    mode: 0755
+
+- name: Copy frontend
+  template:
+    src: "{{ role_path }}/files/srv/www/acetv/index.php.j2"
+    dest: "{{ acetv_frontend_dir }}/index.php"
+    owner: www-data
+    group: www-data
+    mode: 0444
+
+- name: Issue TLS certificates
+  command: "sudo -u www-data {{ nginx_acme_dir }}/acme.sh --issue --domain {{ acetv_fqdn }} --webroot {{ nginx_well_known_dir }} --cert-home {{ nginx_tls_dir }}"
+  args:
+    creates: "{{ nginx_tls_dir }}/{{ acetv_fqdn }}"
+  register: output
+  when: acetv_ssl

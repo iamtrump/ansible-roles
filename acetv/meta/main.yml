@@ -1,0 +1,5 @@
+galaxy_info:
+  author: Mikhail Mironov
+  description: AceStream TV. HLS only.
+
+dependencies: [nginx]

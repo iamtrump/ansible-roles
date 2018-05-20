@@ -1,0 +1,15 @@
+[Unit]
+Description=Acestream Engine
+ConditionPathExists={{ acetv_engine_bin }}
+
+[Service]
+Type=simple
+ExecStart={{ acetv_engine_bin }} --client-console --http-port={{ acetv_port }}
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+User={{ acetv_user }}
+Group={{ acetv_group }}
+
+[Install]
+WantedBy=multi-user.target
+Alias=acestreamengine.service

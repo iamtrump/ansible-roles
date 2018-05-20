@@ -1,0 +1,8 @@
+server {
+  listen *:80 default_server;
+
+   location /.well-known/ {
+    root {{ nginx_well_known_dir }};
+    autoindex on;
+  }
+}
