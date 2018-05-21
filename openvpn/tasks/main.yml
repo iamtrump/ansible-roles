@@ -119,9 +119,10 @@
 
 - name: Remove static user profiles from local 
   when: openvpn_revoke|length > 0
+  become: false
   local_action:
     module: file
-    path: "{{ openvpn_local_config_dir }}/{{ item.name }}.ovpn"
+    path: "{{ openvpn_local_config_dir }}/{{ item }}.ovpn"
     state: absent
   with_items:
     - "{{ openvpn_revoke }}"
