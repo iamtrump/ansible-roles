@@ -17,6 +17,6 @@ openvpn_c_country: RU
 openvpn_c_province: Moscow
 openvpn_c_city: Moscow
 openvpn_c_organization: Corp
-openvpn_c_ou: CU
+openvpn_c_ou: OU
 
 openvpn_local_config_dir: "{{ inventory_hostname }}-openvpn-profiles"

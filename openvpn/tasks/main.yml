@@ -117,7 +117,7 @@
     - "{{ openvpn_revoke }}"
   tags: openvpn_revoke
 
-- name: Remove static user profiles from local 
+- name: Remove static user profiles from local
   when: openvpn_revoke|length > 0
   become: false
   local_action:
@@ -147,8 +147,8 @@
     creates: "private/{{ item.name }}.key.pem"
   with_items:
     - {name: server}
-    - "{{ openvpn_clients }}"
-  tags: openvpn_clients
+    - "{{ openvpn_add_clients }}"
+  tags: openvpn_add_clients
 
 - name: Set proper permissions to keys
   file:
@@ -158,8 +158,8 @@
   with_items:
     - {name: ca}
     - {name: server}
-    - "{{ openvpn_clients }}"
-  tags: openvpn_clients
+    - "{{ openvpn_add_clients }}"
+  tags: openvpn_add_clients
 
 - name: Create sign requests for server and clients certificates
   command: "openssl req -config openssl.cnf -key private/{{ item.name }}.key.pem -new -sha256 -out csr/{{ item.name }}.csr.pem -subj '/C={{ openvpn_c_country }}/ST={{ openvpn_c_province }}/L={{ openvpn_c_city }}/O={{ openvpn_c_organization }}/OU={{ openvpn_c_ou }}/CN={{ item.cn | default(item.name) }}'"
@@ -168,8 +168,8 @@
     creates: "csr/{{ item.name }}.csr.pem"
   with_items:
     - {name: server, cn: "{{ openvpn_server_name }}"}
-    - "{{ openvpn_clients }}"
-  tags: openvpn_clients
+    - "{{ openvpn_add_clients }}"
+  tags: openvpn_add_clients
 
 - name: Sign server certificate
   command: "openssl ca -batch -config openssl.cnf -extensions server_cert -days {{ openvpn_c_days }} -notext -md sha256 -in csr/server.csr.pem -out certs/server.cert.pem"
@@ -183,15 +183,15 @@
     chdir: "{{ openvpn_ca_root }}"
     creates: "certs/{{ item.name }}.cert.pem"
   with_items:
-    - "{{ openvpn_clients }}"
-  tags: openvpn_clients
+    - "{{ openvpn_add_clients }}"
+  tags: openvpn_add_clients
 
 - name: Generate CRL
   command: "openssl ca -config openssl.cnf -gencrl -out crl/ca.crl.pem"
   args:
     chdir: "{{ openvpn_ca_root }}"
   tags:
-    - openvpn_clients
+    - openvpn_add_clients
     - openvpn_revoke
 
 - name: Generate dhparam
@@ -244,41 +244,41 @@
   command: "cat {{ openvpn_ca_root }}/certs/ca.cert.pem"
   register: openvpn_ca_contents
   changed_when: false
-  tags: openvpn_clients
+  tags: openvpn_add_clients
 
 - name: Register client certificate contents
   command: "cat {{ openvpn_ca_root }}/certs/{{ item.name }}.cert.pem"
   with_items:
-    - "{{ openvpn_clients }}"
+    - "{{ openvpn_add_clients }}"
   register: openvpn_client_certificates
   changed_when: false
-  tags: openvpn_clients
+  tags: openvpn_add_clients
 
 - name: Register client key contents
   command: "cat {{ openvpn_ca_root }}/private/{{ item.name }}.key.pem"
   with_items:
-    - "{{ openvpn_clients }}"
+    - "{{ openvpn_add_clients }}"
   register: openvpn_client_keys
   changed_when: false
-  tags: openvpn_clients
+  tags: openvpn_add_clients
 
 - name: Register HMAC key contents
   command: "cat {{ openvpn_root }}/ta.key"
   register: openvpn_hmac_key_contents
   changed_when: false
-  tags: openvpn_clients
+  tags: openvpn_add_clients
 
 - name: Create client configuration profiles
   template:
     src: "{{ role_path }}/files/etc/openvpn/client/openvpn_client.conf.j2"
     dest: "{{ openvpn_root }}/client/{{ item[0].name }}.ovpn"
   with_together:
-    - "{{ openvpn_clients }}"
+    - "{{ openvpn_add_clients }}"
     - "{{ openvpn_client_certificates.results }}"
     - "{{ openvpn_client_keys.results }}"
   loop_control:
     label: "{{ item[0] }}"
-  tags: openvpn_clients
+  tags: openvpn_add_clients
 
 - name: Create static user profile
   lineinfile:
@@ -287,9 +287,9 @@
     line: "ifconfig-push {{ item.ip }} {{ openvpn_network | ipaddr('netmask') }}"
     create: yes
     mode: 0644
-  with_items: "{{ openvpn_clients }}"
+  with_items: "{{ openvpn_add_clients }}"
   when: item.ip is defined
-  tags: openvpn_clients
+  tags: openvpn_add_clients
 
 - name: Copy client configuration profiles to the current local directory
   fetch:
@@ -297,8 +297,8 @@
     dest: "{{ openvpn_local_config_dir }}/{{ item.name }}.ovpn"
     flat: yes
   with_items:
-    - "{{ openvpn_clients }}"
-  tags: openvpn_clients
+    - "{{ openvpn_add_clients }}"
+  tags: openvpn_add_clients
 
 - name: Add cronjob to regenerate crl every 10 days
   cron:
@@ -307,3 +307,16 @@
     user: root
     job: "openssl ca -config {{ openvpn_ca_root }}/openssl.cnf -gencrl -out {{ openvpn_ca_root }}/crl/ca.crl.pem"
     day: "*/10"
+
+- name: Get list of currently valid clients
+  shell: "for c in $(ls certs | grep -v -e ^ca.cert.pem$ -e ^server.cert.pem$); do printf '%-40s' $(echo ${c} | sed 's/\\.cert\\.pem$//') && openssl x509 -in certs/${c} -noout -text | grep Subject:; done "
+  args:
+    chdir: "{{ openvpn_ca_root }}"
+  changed_when: false
+  register: current_clients
+  tags: openvpn_clients
+
+- name: Show currently valid clients
+  debug:
+    var: current_clients.stdout_lines
+  tags: openvpn_clients
