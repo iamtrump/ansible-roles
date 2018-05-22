@@ -42,14 +42,14 @@ Example Playbook
 ----------------
 
 ```
-    - hosts: servers
-      roles:
-        - role: openvpn
-          tags: openvpn
-          vars:
-            openvpn_server_name: Cool server
-            openvpn_clients:
-              - {name: mama, cn: My Mom}
-              - {name: dad}
-            proto: tcp
+- hosts: servers
+  roles:
+    - role: openvpn
+      tags: openvpn
+      vars:
+        openvpn_server_name: Cool server
+        openvpn_clients:
+          - {name: mama, cn: My Mom}
+          - {name: dad}
+        proto: tcp
 ```
