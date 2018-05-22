@@ -6,7 +6,7 @@ Openvpn layer-3 internet gateway with certificate-based authentication.
 Role Variables
 --------------
 ### General
-* `openvpn_server_name` — server name, default is `openvpn server`.
+* `openvpn_server_name` — server common name, default is `openvpn server`.
 * `openvpn_clients` — list of clients. Specify value for `ip` to reserve static IP. `[{name: client, cn: client, ip: 192.168.88.5}]`.
 * `openvpn_revoke` — list of names to revoke, default is `[]`.
 * `openvpn_local_config_dir` — local dir to copy users’ configuration files. Default is `{{ inventory_hostname }}-openvpn-profiles`
