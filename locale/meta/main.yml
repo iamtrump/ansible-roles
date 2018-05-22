@@ -1,5 +1,5 @@
 galaxy_info:
   author: Mikhail Mironov
-  description: Locale and timeone set up
+  description: Locale and timezone set up
 
 dependencies: []
