@@ -45,13 +45,13 @@
     path: "{{ openvpn_ca_root }}/index.txt"
     state: touch
 
-- name: Ensures serial seeded
+- name: Ensure serial seeded
   shell: "openssl rand -hex 16 > serial"
   args:
     chdir: "{{ openvpn_ca_root }}"
     creates: serial
 
-- name: Ensures crlnumber seeded
+- name: Ensure crlnumber seeded
   shell: "echo 1000 > crlnumber"
   args:
     chdir: "{{ openvpn_ca_root }}"
@@ -309,7 +309,7 @@
     day: "*/10"
 
 - name: Get list of currently valid clients
-  shell: "for c in $(ls certs | grep -v -e ^ca.cert.pem$ -e ^server.cert.pem$); do printf '%-40s' $(echo ${c} | sed 's/\\.cert\\.pem$//') && openssl x509 -in certs/${c} -noout -text | grep Subject:; done "
+  shell: "for c in $(ls certs | grep -v -e ^ca.cert.pem$ -e ^server.cert.pem$ | sed 's/\\.cert\\.pem$//'); do printf '%-20s' ${c} && printf '%-16s' $(cat {{ openvpn_root }}/client/${c} 2>/dev/null | awk '{print $2}') && openssl x509 -in certs/${c}.cert.pem -noout -text | grep Subject:; done "
   args:
     chdir: "{{ openvpn_ca_root }}"
   changed_when: false
