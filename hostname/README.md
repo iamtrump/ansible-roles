@@ -1,15 +1,15 @@
 hostname
 =========
 
-The role configureis hostname and /etc/hosts.
+The role configures hostname and /etc/hosts.
 
 Role Variables
 --------------
 
 * `hostname` — hostname to set. Default is `{{ inventory_hostname }}`.
+
 Example Playbook
 ----------------
-
 ```
 - hosts: servers
   roles:
