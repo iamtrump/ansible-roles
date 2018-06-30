@@ -1,8 +1,0 @@
----
-- name: Copy motd
-  copy:
-    src: "{{ role_path }}/files/etc/motd_{{ motd_name | default('fsociety') }}"
-    dest: /etc/motd
-    owner: root
-    group: root
-    mode: 0644
