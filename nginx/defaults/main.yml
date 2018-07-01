@@ -3,3 +3,7 @@ nginx_www_root: /srv/www
 nginx_tls_dir: "{{ nginx_www_root }}/tls"
 nginx_well_known_dir: "{{ nginx_www_root }}/well-known"
 nginx_acme_dir: "{{ nginx_www_root }}/acme.sh"
+nginx_options:
+  - { name: user, value: www-data }
+  - { name: server_names_hash_bucket_size, value: 64 }
+nginx_options_additional: []

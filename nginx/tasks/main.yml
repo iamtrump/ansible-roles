@@ -13,11 +13,16 @@
     name: nginx
     state: present
 
-- name: Set nginx user to www-data
+- name: Configure nginx
   lineinfile:
     path: /etc/nginx/nginx.conf
-    regexp: ^user
-    line: user  www-data;
+    regexp: "^{{ item.name }}"
+    line: "{{ item.name }} {{ item.value }};"
+    insertafter: "^# {{ item.name }}"
+
+  with_items:
+    - "{{ nginx_options }}"
+    - "{{ nginx_options_additional }}"
   notify:
     - nginx restart
 
