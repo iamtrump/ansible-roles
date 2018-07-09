@@ -7,6 +7,6 @@ acetv_group: acetv
 acetv_port: 6878
 acetv_prefix: /opt
 
-acetv_channels_list: http://pomoyka.lib.emergate.net/trash/ttv-list/as.json
+acetv_channels_list: http://91.92.66.82/trash/ttv-list/as.json
 acetv_frontend_dir: "{{ nginx_www_root }}/tv"
 acetv_password: acetv
