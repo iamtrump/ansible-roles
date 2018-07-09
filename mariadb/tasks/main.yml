@@ -1,0 +1,26 @@
+---
+- name: Add mariadb repo key
+  apt_key:
+    id: F1656F24C74CD1D8
+    keyserver: keyserver.ubuntu.com
+
+- name: Add mariadb repo
+  apt_repository:
+    repo: "deb http://mirror.jaleco.com/mariadb/repo/{{ mariadb_series }}/debian {{ ansible_distribution_release }} main"
+    filename: "{{ role_name }}"
+
+- name: Install mariadb and dependencies
+  apt:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - mariadb-server
+
+- name: Set root password
+  command: "/usr/bin/mysqladmin --user=root password \"{{ mariadb_root_password }}\""
+
+- name: Start and enable mariadb
+  service:
+    name: mariadb
+    state: started
+    enabled: yes
