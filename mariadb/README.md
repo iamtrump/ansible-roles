@@ -6,7 +6,7 @@ Installs mariadb.
 Role Variables
 --------------
 
-* `mariadb_series` — series of MariaDB. Defailt is `10.2`. [Details] (https://downloads.mariadb.org).
+* `mariadb_series` — series of MariaDB. Defailt is `10.2`. [Details](https://downloads.mariadb.org).
 * `mariadb_root_password` — root password to set. Default: `password`.
 
 Example Playbook
