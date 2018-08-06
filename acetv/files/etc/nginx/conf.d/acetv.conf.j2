@@ -4,6 +4,11 @@ server {
   server_name {{ acetv_fqdn }} www.{{ acetv_fqdn }};
   listen *:80;
 
+  location /.well-known/ {
+    root {{ nginx_well_known_dir }};
+    autoindex on;
+  }
+
   location /ace/ {
     if_modified_since off;
     add_header Last-Modified "";

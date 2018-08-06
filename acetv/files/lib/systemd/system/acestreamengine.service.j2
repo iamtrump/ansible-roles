@@ -6,7 +6,7 @@ ConditionPathExists={{ acetv_engine_bin }}
 Type=simple
 ExecStart={{ acetv_engine_bin }} --client-console --http-port={{ acetv_port }}
 ExecReload=/bin/kill -HUP $MAINPID
-Restart=on-failure
+Restart=always
 User={{ acetv_user }}
 Group={{ acetv_group }}
 

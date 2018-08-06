@@ -52,6 +52,7 @@
   template:
     src: "{{ role_path }}/files/etc/nginx/conf.d/acetv.conf.j2"
     dest: "/etc/nginx/conf.d/{{ role_name }}.conf"
+    validate: nginx -t -c %s
     owner: root
     group: root
     mode: 0644
@@ -77,5 +78,4 @@
   command: "sudo -u www-data {{ nginx_acme_dir }}/acme.sh --issue --domain {{ acetv_fqdn }} --webroot {{ nginx_well_known_dir }} --cert-home {{ nginx_tls_dir }}"
   args:
     creates: "{{ nginx_tls_dir }}/{{ acetv_fqdn }}"
-  register: output
   when: acetv_ssl
