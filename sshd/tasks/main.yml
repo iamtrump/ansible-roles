@@ -4,7 +4,7 @@
     path: /etc/ssh/sshd_config
     regexp: "^{{ item.name }}"
     line: "{{ item.name }} {{ item.value }}"
-    insertafter: "^#{{ item.name }}" 
+    insertafter: "^#{{ item.name }}"
     validate: sshd -t -f %s
   with_items:
     - "{{ sshd_options }}"
