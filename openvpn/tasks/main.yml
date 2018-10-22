@@ -147,7 +147,7 @@
     creates: "private/{{ item.name }}.key.pem"
   with_items:
     - {name: server}
-    - "{{ openvpn_add_clients }}"
+    - "{{ openvpn_clients }}"
   tags: openvpn_add_clients
 
 - name: Set proper permissions to keys
@@ -158,7 +158,7 @@
   with_items:
     - {name: ca}
     - {name: server}
-    - "{{ openvpn_add_clients }}"
+    - "{{ openvpn_clients }}"
   tags: openvpn_add_clients
 
 - name: Create sign requests for server and clients certificates
@@ -168,7 +168,7 @@
     creates: "csr/{{ item.name }}.csr.pem"
   with_items:
     - {name: server, cn: "{{ openvpn_server_name }}"}
-    - "{{ openvpn_add_clients }}"
+    - "{{ openvpn_clients }}"
   tags: openvpn_add_clients
 
 - name: Sign server certificate
@@ -183,7 +183,7 @@
     chdir: "{{ openvpn_ca_root }}"
     creates: "certs/{{ item.name }}.cert.pem"
   with_items:
-    - "{{ openvpn_add_clients }}"
+    - "{{ openvpn_clients }}"
   tags: openvpn_add_clients
 
 - name: Generate CRL
@@ -249,7 +249,7 @@
 - name: Register client certificate contents
   command: "cat {{ openvpn_ca_root }}/certs/{{ item.name }}.cert.pem"
   with_items:
-    - "{{ openvpn_add_clients }}"
+    - "{{ openvpn_clients }}"
   register: openvpn_client_certificates
   changed_when: false
   tags: openvpn_add_clients
@@ -257,7 +257,7 @@
 - name: Register client key contents
   command: "cat {{ openvpn_ca_root }}/private/{{ item.name }}.key.pem"
   with_items:
-    - "{{ openvpn_add_clients }}"
+    - "{{ openvpn_clients }}"
   register: openvpn_client_keys
   changed_when: false
   tags: openvpn_add_clients
@@ -273,7 +273,7 @@
     src: "{{ role_path }}/files/etc/openvpn/client/openvpn_client.conf.j2"
     dest: "{{ openvpn_root }}/client/{{ item[0].name }}.ovpn"
   with_together:
-    - "{{ openvpn_add_clients }}"
+    - "{{ openvpn_clients }}"
     - "{{ openvpn_client_certificates.results }}"
     - "{{ openvpn_client_keys.results }}"
   loop_control:
@@ -287,17 +287,17 @@
     line: "ifconfig-push {{ item.ip }} {{ openvpn_network | ipaddr('netmask') }}"
     create: yes
     mode: 0644
-  with_items: "{{ openvpn_add_clients }}"
+  with_items: "{{ openvpn_clients }}"
   when: item.ip is defined
   tags: openvpn_add_clients
 
-- name: Copy client configuration profiles to the current local directory
+- name: Copy client configuration profiles to the local directory
   fetch:
     src: "{{ openvpn_root }}/client/{{ item.name }}.ovpn"
     dest: "{{ openvpn_local_config_dir }}/{{ item.name }}.ovpn"
     flat: yes
   with_items:
-    - "{{ openvpn_add_clients }}"
+    - "{{ openvpn_clients }}"
   tags: openvpn_add_clients
 
 - name: Add cronjob to regenerate crl every 10 days
