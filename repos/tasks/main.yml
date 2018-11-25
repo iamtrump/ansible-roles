@@ -3,6 +3,7 @@
   apt:
     name: apt-transport-https
     state: present
+    update_cache: yes
 
 - name: Remove default repos (sources.list)
   file:

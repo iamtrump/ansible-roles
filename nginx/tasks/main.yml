@@ -18,8 +18,7 @@
     path: /etc/nginx/nginx.conf
     regexp: "^{{ item.name }}"
     line: "{{ item.name }} {{ item.value }};"
-    insertafter: "^# {{ item.name }}"
-
+    insertafter: "^http {"
   with_items:
     - "{{ nginx_options }}"
     - "{{ nginx_options_additional }}"
