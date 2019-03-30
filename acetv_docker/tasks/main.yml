@@ -1,0 +1,17 @@
+---
+- name: Install dependencies
+  apt:
+    name:
+      - git
+    update_cache: true
+
+- name: Clone AceTV repo
+  git:
+    repo: "{{ acetv_docker_repo }}"
+    dest: /tmp/acetv
+
+- name: Build AceTV docker image
+  command: docker build -t acetv /tmp/acetv
+
+- name: Run AceTV docker container
+  command: "docker run -d -p {{ acetv_docker_port }}:5000 --name acetv acetv"

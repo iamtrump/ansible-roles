@@ -1,0 +1,33 @@
+---
+- name: Uninstall old versions
+  apt:
+    name:
+      - docker
+      - docker-engine
+      - docker.io
+      - containerd
+      - runc
+    state: absent
+    update_cache: true
+
+- name: Install dependencies
+  apt:
+    name:
+      - apt-transport-https
+
+- name: Add GPG key
+  apt_key:
+    url: https://download.docker.com/linux/debian/gpg
+
+- name: Add docker-ce repo
+  apt_repository:
+    repo: "deb [arch=amd64] https://download.docker.com/linux/debian {{ ansible_distribution_release }} stable"
+    filename: "{{ role_name }}"
+
+- name: Install docker-ce
+  apt:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+    update_cache: true

@@ -1,0 +1,5 @@
+galaxy_info:
+  author: Mikhail Mironov
+  description: Deploy AceTV inside docker
+
+  dependencies: [docker]
