@@ -1,3 +1,2 @@
 ---
 openvpn_root: /etc/openvpn
-openvpn_address: "{{ ansible_default_ipv4.address }}"

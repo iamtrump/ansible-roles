@@ -6,6 +6,7 @@ Openvpn layer-3 internet gateway with certificate-based authentication.
 Role Variables
 --------------
 ### General
+* `openvpn_address` — address for client connections, default is `{{ ansible_default_ipv4.address }}`.
 * `openvpn_server_name` — server common name, default is `openvpn server`.
 * `openvpn_clients` — list of clients. Specify value for `ip` to reserve static IP. `[{name: client, cn: client, ip: 192.168.88.5}]`.
 * `openvpn_revoke` — list of names to revoke, default is `[]`.

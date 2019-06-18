@@ -1,4 +1,5 @@
 ---
+openvpn_address: "{{ ansible_default_ipv4.address }}"
 openvpn_server_name: openvpn server
 openvpn_clients:
   - {name: client, cn: client, ip: 192.168.88.5}
