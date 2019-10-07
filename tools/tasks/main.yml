@@ -1,8 +1,7 @@
 ---
 - name: Install tools and utilites
   apt:
-    name: "{{ item }}"
-    state: present
-  with_items:
+    name:
     - "{{ tools }}"
     - "{{ tools_additional }}"
+    state: present
