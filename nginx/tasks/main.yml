@@ -88,6 +88,15 @@
     hour: 1
     cron_file: "{{ role_name }}"
 
+- name: Add cronjob to reload nginx if certificates has been renewed
+  cron:
+    name: Reload nginx if needed
+    job: "find {{ nginx_tls_dir }} -mtime -1 | egrep '.*' && systemctl reload nginx"
+    user: root
+    minute: 10
+    hour: 1
+    cron_file: "{{ role_name }}"
+
 - name: Start and enable services
   service:
     name: "{{ item }}"
