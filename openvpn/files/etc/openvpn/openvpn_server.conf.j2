@@ -25,6 +25,8 @@ group openvpn
 persist-key
 persist-tun
 status /var/log/openvpn/openvpn-status.log
+{% if openvpn_proto == 'udp' %}
 explicit-exit-notify 1
+{% endif %}
 log /var/log/openvpn/openvpn.log
 verb 3
